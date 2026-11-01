@@ -280,6 +280,15 @@ export async function generateHealthCardPdf(healthId: string): Promise<Buffer> {
   });
 }
 
+function getLabVal(labData: Record<string, any>, key: string, fallback: string | number): string {
+  if (!labData || labData[key] === undefined || labData[key] === null) return String(fallback);
+  const entry = labData[key];
+  if (typeof entry === "object" && entry !== null && "value" in entry) {
+    return String(entry.value);
+  }
+  return String(entry);
+}
+
 /**
  * Generates the official 2-Page MANASVI OCCUPATIONAL HEALTH SERVICE /
  * SHREE SWAMI SAMARTH DIAGNOSTIC AND POLYCLINIC Medical Examination Report Form
@@ -447,11 +456,22 @@ export async function generateManasviMedicalExaminationPdf(healthId: string): Pr
   page1.drawText("Absent", { x: 375, y: 204, size: 7, font: regularFont, color: textDark });
 
   // CNS & B.S.L.
+  let labData: Record<string, any> = {};
+  if (employee.bloodResult?.parametersJson) {
+    try {
+      labData = JSON.parse(employee.bloodResult.parametersJson);
+    } catch {
+      labData = {};
+    }
+  }
+
   page1.drawText("Oriented", { x: 130, y: 192, size: 7, font: regularFont, color: textDark });
-  page1.drawText(employee.bloodResult?.bloodGlucoseFasting ? `${employee.bloodResult.bloodGlucoseFasting} mg/dL` : "92 mg/dL", { x: 375, y: 192, size: 7, font: regularFont, color: textDark });
+  const bslFasting = getLabVal(labData, "bloodGlucoseFasting", getLabVal(labData, "bloodSugarFasting", "92"));
+  page1.drawText(`${bslFasting} mg/dL`, { x: 375, y: 192, size: 7, font: regularFont, color: textDark });
 
   page1.drawText("Intact", { x: 130, y: 180, size: 7, font: regularFont, color: textDark });
-  page1.drawText(employee.bloodResult?.bloodGlucosePp ? `${employee.bloodResult.bloodGlucosePp} mg/dL` : "128 mg/dL", { x: 375, y: 180, size: 7, font: regularFont, color: textDark });
+  const bslPp = getLabVal(labData, "bloodGlucosePp", getLabVal(labData, "bloodSugarPp", "128"));
+  page1.drawText(`${bslPp} mg/dL`, { x: 375, y: 180, size: 7, font: regularFont, color: textDark });
 
   page1.drawText("Normal", { x: 130, y: 168, size: 7, font: regularFont, color: textDark });
   page1.drawText("Intact", { x: 130, y: 156, size: 7, font: regularFont, color: textDark });
@@ -472,28 +492,47 @@ export async function generateManasviMedicalExaminationPdf(healthId: string): Pr
   // =========================================================================
   const page2 = pdfDoc.getPages()[1];
 
-  const br = employee.bloodResult;
+  const bloodGroup = getLabVal(labData, "bloodGroup", "B POSITIVE (B+)");
+  const hb = getLabVal(labData, "hemoglobin", getLabVal(labData, "haemoglobin", "14.8"));
+  const wbc = getLabVal(labData, "totalWbc", getLabVal(labData, "wbc", "7,200"));
+  const rbc = getLabVal(labData, "rbcCount", getLabVal(labData, "rbc", "4.95"));
+  const platelets = getLabVal(labData, "plateletCount", getLabVal(labData, "platelets", "2.45 Lakhs"));
+  const esr = getLabVal(labData, "esr", "12");
+  const rbs = getLabVal(labData, "bloodGlucoseRandom", getLabVal(labData, "bloodSugarRandom", "112"));
+  const fbs = getLabVal(labData, "bloodGlucoseFasting", getLabVal(labData, "bloodSugarFasting", "92"));
+  const ppbs = getLabVal(labData, "bloodGlucosePp", getLabVal(labData, "bloodSugarPp", "128"));
+  const chol = getLabVal(labData, "totalCholesterol", "178");
+  const hdl = getLabVal(labData, "hdlCholesterol", getLabVal(labData, "hdl", "48"));
+  const ldl = getLabVal(labData, "ldlCholesterol", getLabVal(labData, "ldl", "98"));
+  const trig = getLabVal(labData, "triglycerides", "142");
+  const creat = getLabVal(labData, "serumCreatinine", getLabVal(labData, "creatinine", "0.92"));
+  const urea = getLabVal(labData, "bloodUrea", getLabVal(labData, "bun", "16.5"));
+  const tb = getLabVal(labData, "bilirubinTotal", "0.85");
+  const db = getLabVal(labData, "bilirubinDirect", "0.22");
+  const sgot = getLabVal(labData, "sgot", "24.0");
+  const sgpt = getLabVal(labData, "sgpt", "28.0");
+
   const labValues = [
-    { name: "BLOOD GROUP", y: 742, val: br?.bloodGroup ? `${br.bloodGroup} POSITIVE` : "B POSITIVE (B+)" },
-    { name: "HAEMOGLOBIN", y: 718, val: br?.hemoglobin ? `${br.hemoglobin} gm/dL (13.0 - 17.0)` : "14.8 gm/dL (13.0 - 17.0)" },
-    { name: "TOTAL W.B.C. COUNT", y: 694, val: br?.totalWbc ? `${br.totalWbc.toLocaleString()} /cumm (4,000 - 11,000)` : "7,200 /cumm (4,000 - 11,000)" },
-    { name: "R.B.C. COUNT", y: 670, val: br?.rbcCount ? `${br.rbcCount} mill/cumm (4.5 - 5.5)` : "4.95 mill/cumm (4.5 - 5.5)" },
-    { name: "PLATELET COUNT", y: 646, val: br?.plateletCount ? `${br.plateletCount.toLocaleString()} /cumm (1.5 - 4.5 L)` : "2.45 Lakhs /cumm (1.5 - 4.5)" },
+    { name: "BLOOD GROUP", y: 742, val: bloodGroup.includes("POSITIVE") || bloodGroup.includes("NEGATIVE") ? bloodGroup : `${bloodGroup} POSITIVE` },
+    { name: "HAEMOGLOBIN", y: 718, val: `${hb} gm/dL (13.0 - 17.0)` },
+    { name: "TOTAL W.B.C. COUNT", y: 694, val: `${wbc} /cumm (4,000 - 11,000)` },
+    { name: "R.B.C. COUNT", y: 670, val: `${rbc} mill/cumm (4.5 - 5.5)` },
+    { name: "PLATELET COUNT", y: 646, val: `${platelets} /cumm (1.5 - 4.5 L)` },
     { name: "D.C", y: 622, val: "Polys: 62%, Lymphs: 30%, Eos: 4%, Monos: 4%" },
-    { name: "ESR", y: 598, val: br?.esr ? `${br.esr} mm/1st hr (< 15)` : "12 mm/1st hr (< 15)" },
-    { name: "BLOOD SUGAR RANDOM (RBS)", y: 568, val: br?.bloodGlucoseRandom ? `${br.bloodGlucoseRandom} mg/dL (< 140)` : "112 mg/dL (< 140)" },
-    { name: "BLOOD SUGAR FASTING", y: 544, val: br?.bloodGlucoseFasting ? `${br.bloodGlucoseFasting} mg/dL (70 - 100)` : "92 mg/dL (70 - 100)" },
-    { name: "BLOOD SUGAR POST LUNCH", y: 520, val: br?.bloodGlucosePp ? `${br.bloodGlucosePp} mg/dL (< 140)` : "128 mg/dL (< 140)" },
-    { name: "TOTAL CHOLESTEROL", y: 496, val: br?.totalCholesterol ? `${br.totalCholesterol} mg/dL (< 200)` : "178 mg/dL (< 200)" },
-    { name: "HDL CHOLESTEROL", y: 472, val: br?.hdlCholesterol ? `${br.hdlCholesterol} mg/dL (> 40)` : "48 mg/dL (> 40)" },
-    { name: "LDL CHOLESTEROL", y: 448, val: br?.ldlCholesterol ? `${br.ldlCholesterol} mg/dL (< 100)` : "98 mg/dL (< 100)" },
-    { name: "TRIGLYCERIDES", y: 424, val: br?.triglycerides ? `${br.triglycerides} mg/dL (< 150)` : "142 mg/dL (< 150)" },
-    { name: "S. CREATININE", y: 400, val: br?.serumCreatinine ? `${br.serumCreatinine} mg/dL (0.7 - 1.2)` : "0.92 mg/dL (0.7 - 1.2)" },
-    { name: "BLOOD UREA NITROGEN (BUN)", y: 376, val: br?.bloodUrea ? `${br.bloodUrea} mg/dL (7 - 20)` : "16.5 mg/dL (7 - 20)" },
-    { name: "TOTAL BILIRUBIN (TB)", y: 352, val: br?.bilirubinTotal ? `${br.bilirubinTotal} mg/dL (0.2 - 1.2)` : "0.85 mg/dL (0.2 - 1.2)" },
-    { name: "DIRECT BILIRUBIN (DB)", y: 328, val: br?.bilirubinDirect ? `${br.bilirubinDirect} mg/dL (0.0 - 0.3)` : "0.22 mg/dL (0.0 - 0.3)" },
-    { name: "SGOT", y: 304, val: br?.sgot ? `${br.sgot} U/L (< 40)` : "24.0 U/L (< 40)" },
-    { name: "SGPT", y: 280, val: br?.sgpt ? `${br.sgpt} U/L (< 40)` : "28.0 U/L (< 40)" },
+    { name: "ESR", y: 598, val: `${esr} mm/1st hr (< 15)` },
+    { name: "BLOOD SUGAR RANDOM (RBS)", y: 568, val: `${rbs} mg/dL (< 140)` },
+    { name: "BLOOD SUGAR FASTING", y: 544, val: `${fbs} mg/dL (70 - 100)` },
+    { name: "BLOOD SUGAR POST LUNCH", y: 520, val: `${ppbs} mg/dL (< 140)` },
+    { name: "TOTAL CHOLESTEROL", y: 496, val: `${chol} mg/dL (< 200)` },
+    { name: "HDL CHOLESTEROL", y: 472, val: `${hdl} mg/dL (> 40)` },
+    { name: "LDL CHOLESTEROL", y: 448, val: `${ldl} mg/dL (< 100)` },
+    { name: "TRIGLYCERIDES", y: 424, val: `${trig} mg/dL (< 150)` },
+    { name: "S. CREATININE", y: 400, val: `${creat} mg/dL (0.7 - 1.2)` },
+    { name: "BLOOD UREA NITROGEN (BUN)", y: 376, val: `${urea} mg/dL (7 - 20)` },
+    { name: "TOTAL BILIRUBIN (TB)", y: 352, val: `${tb} mg/dL (0.2 - 1.2)` },
+    { name: "DIRECT BILIRUBIN (DB)", y: 328, val: `${db} mg/dL (0.0 - 0.3)` },
+    { name: "SGOT", y: 304, val: `${sgot} U/L (< 40)` },
+    { name: "SGPT", y: 280, val: `${sgpt} U/L (< 40)` },
     { name: "PROTEIN", y: 256, val: "7.2 gm/dL (6.4 - 8.3)" },
     { name: "ALBUMIN", y: 232, val: "4.4 gm/dL (3.5 - 5.0)" },
     { name: "ALKALINE PHOSPHATASE", y: 208, val: "78.0 U/L (44 - 147)" },
