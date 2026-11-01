@@ -1,0 +1,417 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  COMPANY_HR
+  REGISTRATION_DESK
+  COUNTER_STAFF
+  DOCTOR_ASSISTANT
+  DOCTOR
+  BACK_OFFICE
+}
+
+enum EmployeeType {
+  COMPANY_STAFF
+  CONTRACT_EMPLOYEE
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum VisitStatus {
+  PENDING
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  SKIPPED_WITH_AUTH
+  CORRECTION_REQUIRED
+}
+
+enum FitnessStatus {
+  FIT
+  UNFIT
+  FIT_WITH_RESTRICTION
+}
+
+enum CounterType {
+  REGISTRATION
+  VITALS_VISION
+  BLOOD_COLLECTION
+  ECG
+  PFT
+  AUDIOMETRY
+  CHEST_XRAY
+  DOCTOR_EXAMINATION
+  BACK_OFFICE
+  CUSTOM
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(COUNTER_STAFF)
+  mobile       String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  companyId    String?
+  company      Company? @relation(fields: [companyId], references: [id])
+
+  counterAssignments CounterAssignment[]
+  counterVisits      CounterVisit[]
+  doctorExaminations DoctorExamination[]
+  fitnessDecisions   FitnessDecision[]
+  auditLogs          AuditLog[]
+}
+
+model Company {
+  id              String   @id @default(uuid())
+  name            String
+  codePrefix      String   @unique // e.g. TATA, INFY
+  address         String
+  city            String
+  state           String
+  pinCode         String
+  registeredEmail String
+  hrContactName   String
+  hrMobile        String
+  regDate         DateTime @default(now())
+  amcStartDate    DateTime
+  amcEndDate      DateTime
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users      User[]
+  camps      Camp[]
+  employees  Employee[]
+  emailQueue EmailQueue[]
+}
+
+model Camp {
+  id              String   @id @default(uuid())
+  campId          String   @unique // e.g. TATA-2026-CAMP01
+  name            String
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  location        String
+  startDate       DateTime
+  endDate         DateTime
+  operatingStatus String   @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED
+  configJson      String?  // Camp specific configs like parallel processing allowed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  counters           CampCounter[]
+  counterAssignments CounterAssignment[]
+  employees          Employee[]
+  emailQueue         EmailQueue[]
+}
+
+model CampCounter {
+  id           String      @id @default(uuid())
+  campId       String
+  camp         Camp        @relation(fields: [campId], references: [id], onDelete: Cascade)
+  counterNo    Int
+  name         String
+  code         String      // e.g. REG, VITALS, ECG, PFT, BLOOD, XRAY, DOCTOR
+  counterType  CounterType @default(CUSTOM)
+  displayOrder Int
+  isMandatory  Boolean     @default(true)
+  allowsUpload Boolean     @default(false)
+  allowsForm   Boolean     @default(true)
+  configJson   String?     // field definitions, test parameters, validation ranges
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  assignments CounterAssignment[]
+  visits      CounterVisit[]
+}
+
+model CounterAssignment {
+  id            String      @id @default(uuid())
+  campId        String
+  camp          Camp        @relation(fields: [campId], references: [id], onDelete: Cascade)
+  campCounterId String
+  campCounter   CampCounter @relation(fields: [campCounterId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+}
+
+model Employee {
+  id             String       @id @default(uuid())
+  campId         String
+  camp           Camp         @relation(fields: [campId], references: [id], onDelete: Cascade)
+  companyId      String
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  healthId       String       @unique // Permanent Health ID: e.g. TATA-0001
+  tempHealthId   String?      // Client offline temp ID
+  employeeType   EmployeeType @default(COMPANY_STAFF)
+  contractorName String?
+  employeeCode   String       // Employee ID in company
+  fullName       String
+  dob            DateTime
+  age            Int
+  sex            Sex
+  department     String
+  designation    String
+  tenureYears    Int          @default(0)
+  tenureMonths   Int          @default(0)
+  mobile         String
+  email          String?
+  identificationMark String?
+  familyHistoryJson  String? // { father: {...}, mother: {...} }
+  personalHistoryJson String? // { typhoid: false, jaundice: false, epilepsy: false, surgery: "...", ... }
+  habitsJson         String? // { tobacco: "No", smoking: "No", alcohol: "Occasional" }
+  presentIllness     String?
+  
+  // Vitals at Registration
+  heightCm       Float
+  weightKg       Float
+  bmi            Float
+  bmiCategory    String       // Underweight, Normal, Overweight, Obese
+  photoUrl       String?
+
+  status         String       @default("REGISTERED") // REGISTERED, IN_PROGRESS, PENDING_VERIFICATION, PENDING_DOCTOR, FINALIZED
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  counterVisits       CounterVisit[]
+  attachments         MedicalAttachment[]
+  vitalsVision        VitalsVision?
+  bloodResult         BloodResult?
+  diagnosticResults   DiagnosticResult[]
+  doctorExamination   DoctorExamination?
+  fitnessDecision     FitnessDecision?
+  medicalReports      MedicalReport[]
+  notificationQueue   NotificationQueue[]
+}
+
+model CounterVisit {
+  id            String      @id @default(uuid())
+  campId        String
+  campCounterId String
+  campCounter   CampCounter @relation(fields: [campCounterId], references: [id], onDelete: Cascade)
+  employeeId    String
+  employee      Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  status        VisitStatus @default(WAITING)
+  operatorId    String?
+  operator      User?       @relation(fields: [operatorId], references: [id])
+  startedAt     DateTime?
+  completedAt   DateTime?
+  notes         String?
+  overrideReason String?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  attachments       MedicalAttachment[]
+  diagnosticResults DiagnosticResult[]
+}
+
+model VitalsVision {
+  id                 String   @id @default(uuid())
+  employeeId         String   @unique
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  systolicBp         Int      // mmHg
+  diastolicBp        Int      // mmHg
+  pulse              Int?     // bpm
+  
+  distantVisionRight String   // e.g. 6/6
+  distantVisionLeft  String   // e.g. 6/6
+  nearVisionRight    String   // e.g. N6
+  nearVisionLeft     String   // e.g. N6
+  withGlasses        Boolean  @default(false)
+  colorVision        String   @default("Normal") // Normal, Color Blind
+  
+  notes              String?
+  recordedBy         String?
+  recordedAt         DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model BloodResult {
+  id                   String   @id @default(uuid())
+  employeeId           String   @unique
+  employee             Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  // Structured parameters (Hb, Sugar, WBC, etc.) stored as JSON for dynamic customization
+  // Example: { "haemoglobin": { "value": 14.2, "unit": "g/dL", "status": "NORMAL" }, ... }
+  parametersJson       String?
+  labReportUrl         String?
+  isVerified           Boolean  @default(false)
+  verifiedBy           String?
+  verifiedAt           DateTime?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model DiagnosticResult {
+  id             String        @id @default(uuid())
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  counterVisitId String?
+  counterVisit   CounterVisit? @relation(fields: [counterVisitId], references: [id])
+  
+  testType       String        // ECG, PFT, AUDIOMETRY, CHEST_XRAY, etc.
+  numericalData  String?       // JSON of measurements (e.g. FVC, FEV1, hearing thresholds)
+  findings       String?       // Radiologist / technician findings
+  conclusion     String?       // Normal / Abnormal / Borderline
+  reportUrl      String?       // PDF or JPEG attachment
+  verifiedBy     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model MedicalAttachment {
+  id             String        @id @default(uuid())
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  counterVisitId String?
+  counterVisit   CounterVisit? @relation(fields: [counterVisitId], references: [id])
+  
+  testType       String        // PHOTO, ECG, PFT, AUDIOMETRY, XRAY, LAB, OTHER
+  fileName       String
+  fileUrl        String
+  fileSizeBytes  Int
+  mimeType       String
+  checksum       String?
+  uploadedBy     String?
+  uploadedAt     DateTime      @default(now())
+}
+
+model DoctorExamination {
+  id                   String   @id @default(uuid())
+  employeeId           String   @unique
+  employee             Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  doctorId             String?
+  doctor               User?    @relation(fields: [doctorId], references: [id])
+  
+  pastMedicalHistory   String?  // HTN, DM, Asthma, TB, Surgical, Epilepsy, etc.
+  occupationalHistory  String?  // Chemical exposure, noise, dust, shift work
+  presentComplaints    String?
+  
+  // Fast-entry flags: e.g. {"respiratory": "NAD", "cvs": "ABNORMAL", "cns": "NAD"}
+  nadFlagsJson         String?
+  // Detailed findings when abnormal: e.g. {"cvs": ["Murmur", "Tachycardia"], "notes": "..."}
+  abnormalFindingsJson String?
+  
+  physicalExamNotes    String?
+  generalAdvice        String?
+  isDraft              Boolean  @default(false)
+  examinedAt           DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model FitnessDecision {
+  id              String        @id @default(uuid())
+  employeeId      String        @unique
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  doctorId        String
+  doctor          User          @relation(fields: [doctorId], references: [id])
+  
+  fitnessStatus   FitnessStatus // FIT, UNFIT, FIT_WITH_RESTRICTION
+  adviceListJson  String        // JSON array of advice: ["Needs Spectacles", "Low Salt Diet"]
+  doctorRemarks   String?
+  restrictions    String?       // When Fit with Restriction (e.g. No heights, No night shifts)
+  
+  version         Int           @default(1)
+  signedAt        DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model MedicalReport {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  reportType  String   // DETAILED_REPORT, HEALTH_CARD
+  version     Int      @default(1)
+  pdfPath     String
+  fileSize    Int?
+  checksum    String?
+  generatedBy String?
+  generatedAt DateTime @default(now())
+}
+
+model NotificationQueue {
+  id           String    @id @default(uuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  channel      String    // SMS, WHATSAPP
+  recipient    String    // Phone number
+  messageText  String
+  status       String    @default("QUEUED") // QUEUED, SENT, FAILED
+  attempts     Int       @default(0)
+  lastAttempt  DateTime?
+  errorLog     String?
+  createdAt    DateTime  @default(now())
+}
+
+model EmailQueue {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campId         String?
+  camp           Camp?     @relation(fields: [campId], references: [id])
+  
+  reportType     String    // DAILY_SUMMARY, FINAL_CAMP_SUMMARY, FINAL_MEDICAL_REPORTS
+  recipientEmail String
+  subject        String
+  bodyHtml       String
+  attachmentPath String?   // Path to generated Excel or ZIP
+  status         String    @default("QUEUED") // QUEUED, SENT, FAILED
+  attempts       Int       @default(0)
+  errorLog       String?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model SyncOperation {
+  id              String    @id @default(uuid())
+  clientOpId      String    @unique // Unique UUID generated on client
+  deviceId        String?
+  entityType      String    // EMPLOYEE, COUNTER_VISIT, VITALS, DIAGNOSTIC, DOCTOR_EXAM, FITNESS
+  action          String    // CREATE, UPDATE
+  payloadJson     String
+  status          String    @default("PENDING") // PENDING, APPLIED, CONFLICT, FAILED
+  clientTimestamp DateTime
+  serverTimestamp DateTime  @default(now())
+  retryCount      Int       @default(0)
+  conflictReason  String?
+  resolvedAt      DateTime?
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  entityType  String
+  entityId    String
+  action      String   // CREATE, UPDATE, VERIFY, OVERRIDE, DELETE, EXPORT
+  beforeJson  String?
+  afterJson   String?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+}
