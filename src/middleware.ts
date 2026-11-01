@@ -14,8 +14,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow login page
-  if (pathname === "/login") {
+  // Allow public pages: login, terms, privacy
+  if (
+    pathname === "/login" ||
+    pathname === "/terms" ||
+    pathname === "/privacy"
+  ) {
     return NextResponse.next();
   }
 
@@ -34,6 +38,11 @@ export function middleware(request: NextRequest) {
       const json = atob(base64);
       const session = JSON.parse(json);
       const role = session.role;
+
+      // Allow legal pages for all authenticated roles
+      if (pathname === "/terms" || pathname === "/privacy") {
+        return NextResponse.next();
+      }
 
       // Strictly lock Counter 2 operator (and other counter operators) to /counter ONLY
       if (

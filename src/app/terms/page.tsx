@@ -13,11 +13,11 @@ export default function TermsPage() {
       {/* Back button */}
       <div>
         <Link
-          href="/"
+          href="/login"
           className="inline-flex items-center text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-          Back to Workstation
+          Back to Login / Workstation
         </Link>
       </div>
 
