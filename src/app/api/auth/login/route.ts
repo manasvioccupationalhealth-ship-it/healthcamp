@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       name: user.name,
       role: user.role,
       companyId: user.companyId,
+      termsAcceptedAt: user.termsAcceptedAt,
     });
 
     return NextResponse.json({

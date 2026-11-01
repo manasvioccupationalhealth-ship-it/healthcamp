@@ -590,10 +590,10 @@ export default function SuperAdminCampsPage() {
                     return (
                       <div className="mt-1.5 p-2 bg-slate-50 rounded border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
                         <div>
-                          <span className="font-semibold text-slate-800">HR Login Email:</span>{" "}
+                          <span className="font-semibold text-slate-800">HR Contact Email:</span>{" "}
                           <span className="font-mono text-slate-900">{selected.registeredEmail}</span>
                         </div>
-                        <span className="text-[10px] text-slate-500">Default Pass: Password@123</span>
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">Active Company</span>
                       </div>
                     );
                   })()}

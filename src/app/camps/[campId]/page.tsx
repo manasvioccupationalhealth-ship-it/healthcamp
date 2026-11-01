@@ -161,7 +161,7 @@ function CampDetailContent({ params }: { params: Promise<{ campId: string }> }) 
   const [newStaffEmail, setNewStaffEmail] = useState("");
   const [newStaffRole, setNewStaffRole] = useState("COUNTER_STAFF");
   const [newStaffMobile, setNewStaffMobile] = useState("");
-  const [newStaffPassword, setNewStaffPassword] = useState("Password@123");
+  const [newStaffPassword, setNewStaffPassword] = useState("");
   const [createStaffLoading, setCreateStaffLoading] = useState(false);
 
   // Modal: Add Custom Counter
@@ -1091,7 +1091,7 @@ function CampDetailContent({ params }: { params: Promise<{ campId: string }> }) 
                     required
                     value={newStaffEmail}
                     onChange={(e) => setNewStaffEmail(e.target.value)}
-                    placeholder="operator@healthcamp.local"
+                    placeholder="staff@domain.com"
                     className="w-full p-2 text-xs border border-slate-300 rounded"
                   />
                 </div>
@@ -1115,14 +1115,15 @@ function CampDetailContent({ params }: { params: Promise<{ campId: string }> }) 
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                      Default Password
+                      Set Initial Password
                     </label>
                     <input
-                      type="text"
+                      type="password"
                       required
                       value={newStaffPassword}
                       onChange={(e) => setNewStaffPassword(e.target.value)}
-                      className="w-full p-2 text-xs border border-slate-300 rounded font-mono"
+                      placeholder="Min 6 characters"
+                      className="w-full p-2 text-xs border border-slate-300 rounded"
                     />
                   </div>
                 </div>

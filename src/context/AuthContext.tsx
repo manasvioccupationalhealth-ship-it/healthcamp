@@ -9,6 +9,7 @@ export interface UserSession {
   role: string;
   companyId?: string | null;
   companyName?: string | null;
+  termsAcceptedAt?: string | null;
   counterAssignments?: {
     campId: string;
     counterId: string;

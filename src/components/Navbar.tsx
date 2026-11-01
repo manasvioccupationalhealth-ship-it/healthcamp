@@ -75,13 +75,6 @@ export function Navbar() {
     }
   };
 
-  const handleQuickRoleSwitch = async (roleEmail: string) => {
-    await login(roleEmail, "Password@123");
-    setRoleMenuOpen(false);
-    setMobileMenuOpen(false);
-    router.refresh();
-  };
-
   const navLinks = [
     { label: user?.role === "COMPANY_HR" ? "Company Camps" : "All Camps", href: "/", icon: Activity, roles: ["SUPER_ADMIN", "COMPANY_HR"] },
     { label: "Registration Desk", href: "/registration", icon: UserPlus, roles: ["SUPER_ADMIN", "REGISTRATION_DESK"] },
@@ -228,55 +221,30 @@ export function Navbar() {
                       </span>
                     </div>
 
-                    {user.role === "SUPER_ADMIN" && (
-                      <>
-                        <div className="px-3 py-1 text-[10px] uppercase tracking-wider font-semibold text-slate-400">
-                          Fast Switch Role (Admin Only)
-                        </div>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("admin@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Super Admin
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("doctor@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Doctor (Dr. Rajesh)
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("registration@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Registration Desk
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("assistant@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Counter 2 Operator (Vitals)
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("ecg@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Counter Operator (ECG Tech)
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("occupational.health@tataadvanced.com")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Company HR (Tata)
-                        </button>
-                        <button
-                          onClick={() => handleQuickRoleSwitch("backoffice@healthcamp.local")}
-                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700"
-                        >
-                          Back Office
-                        </button>
-                      </>
+                    {user.companyName && (
+                      <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50">
+                        <p className="text-[10px] text-slate-500">Assigned Company</p>
+                        <p className="font-semibold text-slate-800 truncate">{user.companyName}</p>
+                      </div>
                     )}
+
+                    <div className="py-1">
+                      <Link
+                        href="/terms"
+                        onClick={() => setRoleMenuOpen(false)}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between"
+                      >
+                        <span>Terms & Medical NDA</span>
+                        <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">Active</span>
+                      </Link>
+                      <Link
+                        href="/privacy"
+                        onClick={() => setRoleMenuOpen(false)}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700 block"
+                      >
+                        Privacy & Data Security
+                      </Link>
+                    </div>
                     <div className="border-t border-slate-100 mt-1 pt-1">
                       <button
                         onClick={async () => {

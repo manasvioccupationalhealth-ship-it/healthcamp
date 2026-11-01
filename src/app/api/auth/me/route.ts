@@ -32,6 +32,7 @@ export async function GET() {
       role: user.role,
       companyId: user.companyId,
       companyName: user.company?.name,
+      termsAcceptedAt: user.termsAcceptedAt ? user.termsAcceptedAt.toISOString() : null,
       counterAssignments: user.counterAssignments.map((ca) => ({
         campId: ca.campId,
         counterId: ca.campCounterId,

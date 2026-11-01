@@ -15,8 +15,8 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-// Execute WAL pragma on SQLite startup in Node server environment
-if (typeof window === "undefined") {
+// Execute WAL pragma on SQLite startup in Node server environment (if using SQLite)
+if (typeof window === "undefined" && (!process.env.DATABASE_URL || process.env.DATABASE_URL.startsWith("file:"))) {
   prisma.$queryRawUnsafe("PRAGMA journal_mode = WAL;").catch(() => {});
   prisma.$queryRawUnsafe("PRAGMA synchronous = NORMAL;").catch(() => {});
   prisma.$queryRawUnsafe("PRAGMA busy_timeout = 5000;").catch(() => {});

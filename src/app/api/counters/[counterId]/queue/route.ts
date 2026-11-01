@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { maskMobileNumber } from "@/lib/mask";
 
 export async function GET(
   req: NextRequest,
@@ -39,11 +40,11 @@ export async function GET(
       counter.counterType === "REGISTRATION";
 
     if (session && session.role !== "SUPER_ADMIN") {
-      if (session.role === "DOCTOR_ASSISTANT" || session.email === "assistant@healthcamp.local") {
+      if (session.role === "DOCTOR_ASSISTANT") {
         if (!isCounter2) {
           return NextResponse.json({ error: "Access restricted to Counter 2 only." }, { status: 403 });
         }
-      } else if (session.role === "REGISTRATION_DESK" || session.email === "registration@healthcamp.local") {
+      } else if (session.role === "REGISTRATION_DESK") {
         if (!isCounter1) {
           return NextResponse.json({ error: "Access restricted to Counter 1 only." }, { status: 403 });
         }
@@ -183,7 +184,7 @@ export async function GET(
     const isOperatorRestricted =
       session &&
       session.role !== "SUPER_ADMIN" &&
-      (session.role === "DOCTOR_ASSISTANT" || session.email === "assistant@healthcamp.local");
+      session.role === "DOCTOR_ASSISTANT";
 
     // For Counter 2 operator, sanitize data so only Counter 2 data is exposed
     const sanitizedVisits = enrichedVisits.map((v) => {
@@ -209,13 +210,19 @@ export async function GET(
             weightKg: v.employee.weightKg,
             bmi: v.employee.bmi,
             bmiCategory: v.employee.bmiCategory,
-            mobile: v.employee.mobile,
+            mobile: maskMobileNumber(v.employee.mobile, session?.role),
             // Only Counter 2 data:
             vitalsVision: v.employee.vitalsVision,
           },
         };
       }
-      return v;
+      return {
+        ...v,
+        employee: {
+          ...v.employee,
+          mobile: maskMobileNumber(v.employee.mobile, session?.role),
+        },
+      };
     });
 
     const waiting = sanitizedVisits.filter((v) => v.status === "WAITING");

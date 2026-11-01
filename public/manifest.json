@@ -1,17 +1,58 @@
 {
-  "name": "Occupational Health Surveillance & Check-Up Management",
+  "name": "Manasvi Occupational Health Surveillance & Camp System",
   "short_name": "HealthCamp",
-  "description": "Local-first, offline-capable occupational health check-up camp system",
+  "description": "Secure, statutory occupational health surveillance, worker check-up and medical record system",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0284c7",
   "orientation": "any",
+  "categories": ["medical", "health", "business", "productivity"],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Counter Station",
+      "short_name": "Station",
+      "url": "/counter",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Doctor Review",
+      "short_name": "Doctor",
+      "url": "/doctor/master-review",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Worker Registration",
+      "short_name": "Register",
+      "url": "/registration",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

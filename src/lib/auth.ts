@@ -13,6 +13,7 @@ export interface SessionPayload {
   name: string;
   role: string;
   companyId?: string | null;
+  termsAcceptedAt?: string | null;
 }
 
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
@@ -114,6 +115,7 @@ export async function authenticateUser(email: string, passwordPlain: string) {
     role: user.role,
     companyId: user.companyId,
     companyName: user.company?.name,
+    termsAcceptedAt: user.termsAcceptedAt ? user.termsAcceptedAt.toISOString() : null,
     counterAssignments: user.counterAssignments.map((ca) => ({
       campId: ca.campId,
       counterId: ca.campCounterId,
