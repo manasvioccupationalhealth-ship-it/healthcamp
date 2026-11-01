@@ -28,6 +28,13 @@ export async function POST(req: Request) {
       user,
     });
   } catch (error: unknown) {
+    const rawMsg = error instanceof Error ? error.message : "";
+    if (rawMsg.includes("DATABASE_URL") || rawMsg.includes("Environment variable not found") || rawMsg.includes("connect")) {
+      return NextResponse.json(
+        { error: "Database not configured: Please add your DATABASE_URL in your Vercel Project Settings (Environment Variables)." },
+        { status: 500 }
+      );
+    }
     const msg = error instanceof Error ? error.message : "Authentication error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
